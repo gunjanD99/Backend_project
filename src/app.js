@@ -1,9 +1,7 @@
-import React from 'react'
+import express from "express"
+import cors from "cors"
+import cookieParser from "cookie-parser"
 
-function app() {
-  return (
-    <div>app</div>
-  )
-}
+const app = express()
 
-export default app
+export {app}

@@ -1,9 +1,1 @@
-import React from 'react'
-
-function constants() {
-  return (
-    <div>constants</div>
-  )
-}
-
-export default constants
+export const DB_NAME = "myBackend_PROJECT"
