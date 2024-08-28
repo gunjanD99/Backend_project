@@ -1,23 +1,22 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import {ApiError} from "../utils/ApiError.js";
-import {User} from "../models/User.model.js";
+import {User} from "../models/user.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken"
 import mongoose from "mongoose";
 
-const generateAccessorRefreshToken = async (userId)=> {
-
+const generateAccessAndRefreshToken = async (userId)=> {
   try {
-    const user = User.findById(userId)
+    const user = await User.findById(userId)
       const accessToken = user.generateAccessToken()
       const refreshToken = user.generateRefreshToken()
-  
+      // console.log(user)
+      // console.log(refreshToken)
+      // console.log(accessToken)
+
       user.refreshToken= refreshToken
       await user.save({validateBeforeSave: false});
-  
       return {accessToken, refreshToken}
-  
-
   } catch (error) {
       throw new ApiError(500, "Something went wrong while generating referesh and access token")
   }
@@ -26,6 +25,7 @@ const generateAccessorRefreshToken = async (userId)=> {
 const registerUser = asyncHandler(async (req, res)=>{
 
   const {fullname, email, username, password} = req.body
+  console.log("email: ",email);
 
   if([fullname, email, username, password].some((field) => field?.trim() == ""))
     {
@@ -36,7 +36,7 @@ const registerUser = asyncHandler(async (req, res)=>{
     $or :[{email} , {username}]
   })
   if (existedUser) {
-    throw new ApiError(409, "User with email or username already exists")
+    throw new ApiError(400, "User with email or username already exists")
 }
 
   const user= await User.create({
@@ -59,32 +59,41 @@ const registerUser = asyncHandler(async (req, res)=>{
 
 const loginUser =  asyncHandler(async(req,res)=> {
 
-  const {email, username, password}= req.body
+  const {email,username, password}= req.body
   if(!email && !username){
     throw new ApiError(400, "email or username required")
   }
 
   const checkUser= await User.findOne({
     $or: [{email} , {username}]
+    // email
   })
+  
   if(!checkUser){
     throw new ApiError(400, "User not found")
   }
+  // console.log("checkPassword",checkPassword)
 
   const checkPassword = await checkUser.isPasswordCorrect(password)
   if(!checkPassword){
     throw new ApiError(401, "password does not match")
   }
+  // console.log("checkUser",checkUser);
 
-  const {accessToken, refreshToken} = await generateAccessorRefreshToken(checkUser._id)
-  const loginUser= await User.findById(checkUser._id).select("-password -refreshToken")
+  const {accessToken, refreshToken} = await generateAccessAndRefreshToken(checkUser._id)
+  // console.log("1User",accessToken);
+  // console.log("2User",refreshToken);
+
+
+  const loggedinUser= await User.findById(checkUser._id).select("-password -refreshToken")
+  // console.log("logg",loggedinUser);
 
  const options = {
   httpOnly: true,
   secure: true
  }
   return res.status(200).cookie("accessToken", accessToken, options).cookie("refreshToken",refreshToken, options).json(
-    new ApiResponse(2001,{checkUser: loginUser, refreshToken, accessToken} ,"login User Successfully")
+    new ApiResponse(201,{checkUser: loggedinUser, refreshToken, accessToken} ,"login User Successfully")
   )
 })
 

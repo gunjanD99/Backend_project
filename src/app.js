@@ -14,8 +14,10 @@ app.use(express.static("public"))
 app.use(cookieParser())
 
 import userRouter from "./routes/user.router.js"
+import paymentRouter from "./routes/payment.router.js"
 
-app.use("pro/v1/users", userRouter)
+app.use("/api/v1/users", userRouter)
+app.use("/api/v1/users/amount", paymentRouter)
 
 
 export {app}
